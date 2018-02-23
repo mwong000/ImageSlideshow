@@ -236,18 +236,24 @@ open class ImageSlideshow: UIView {
 
     /// updates frame of the scroll view and its inner items
     func layoutScrollView() {
+        updateScrollViewFrameAndContentSize()
+        layoutSlideshowItems()
+        setCurrentPage(self.currentPage, animated: false)
+    }
+    
+    private func updateScrollViewFrameAndContentSize() {
         let scrollViewBottomPadding: CGFloat = pageControlPosition.bottomPadding
         scrollView.frame = CGRect(x: 0, y: 0, width: frame.size.width, height: frame.size.height - scrollViewBottomPadding)
         scrollView.contentSize = CGSize(width: scrollView.frame.size.width * CGFloat(scrollViewImages.count), height: scrollView.frame.size.height)
-
+    }
+    
+    private func layoutSlideshowItems() {
         for (index, view) in self.slideshowItems.enumerated() {
             if !view.zoomInInitially {
                 view.zoomOut()
             }
             view.frame = CGRect(x: scrollView.frame.size.width * CGFloat(index), y: 0, width: scrollView.frame.size.width, height: scrollView.frame.size.height)
         }
-
-        setCurrentPage(currentPage, animated: false)
     }
 
     /// reloads scroll view with latest slideshow items
@@ -276,6 +282,28 @@ open class ImageSlideshow: UIView {
 
         loadImages(for: scrollViewPage)
     }
+    
+    private func removeImageFromScrollViewAndLayoutScrollView(index: Int, animated: Bool) {
+        let viewToRemove = slideshowItems.remove(at: slideshowItemsIndexForImagesIndex(index))
+        if scrollViewPage >= slideshowItems.count {
+            scrollViewPage = slideshowItems.count - 1
+        }
+        if animated {
+            UIView.animate(withDuration: 0.2, animations: {
+                viewToRemove.removeFromSuperview()
+                self.setCurrentPage(self.scrollViewPage, animated: false)
+                self.layoutSlideshowItems()
+            }, completion: { _ in
+                self.updateScrollViewFrameAndContentSize()
+            })
+        }
+        else {
+            viewToRemove.removeFromSuperview()
+            layoutSlideshowItems()
+            setCurrentPage(self.scrollViewPage, animated: false)
+            updateScrollViewFrameAndContentSize()
+        }
+    }
 
     private func loadImages(for scrollViewPage: Int) {
         let totalCount = slideshowItems.count
@@ -296,6 +324,10 @@ open class ImageSlideshow: UIView {
         }
     }
 
+    private func slideshowItemsIndexForImagesIndex(_ index: Int) -> Int {
+        return index + (circular ? 1 : 0)
+    }
+    
     // MARK: - Image setting
 
     /**
@@ -304,12 +336,25 @@ open class ImageSlideshow: UIView {
      */
     open func setImageInputs(_ inputs: [InputSource]) {
         self.images = inputs
-        self.pageControl.numberOfPages = inputs.count
 
+        updatePageControlNumberOfPages()
+        updateScrollViewImages()
+
+        reloadScrollView()
+        layoutScrollView()
+        layoutPageControl()
+        setTimerIfNeeded()
+    }
+    
+    private func updatePageControlNumberOfPages() {
+        self.pageControl.numberOfPages = self.images.count
+    }
+    
+    private func updateScrollViewImages() {
         // in circular mode we add dummy first and last image to enable smooth scrolling
         if circular && images.count > 1 {
             var scImages = [InputSource]()
-
+            
             if let last = images.last {
                 scImages.append(last)
             }
@@ -317,14 +362,19 @@ open class ImageSlideshow: UIView {
             if let first = images.first {
                 scImages.append(first)
             }
-
+            
             self.scrollViewImages = scImages
         } else {
             self.scrollViewImages = images
         }
-
-        reloadScrollView()
-        layoutScrollView()
+    }
+    
+    open func removeImageInput(at index: Int, animated: Bool) {
+        images.remove(at: index)
+        updatePageControlNumberOfPages()
+        updateScrollViewImages()
+        
+        removeImageFromScrollViewAndLayoutScrollView(index: index, animated: animated)
         layoutPageControl()
         setTimerIfNeeded()
     }
