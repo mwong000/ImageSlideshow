@@ -18,7 +18,7 @@ open class ImageSlideshowItem: UIScrollView, UIScrollViewDelegate {
     open let activityIndicator: ActivityIndicatorView?
 
     /// Input Source for the item
-    open let image: InputSource
+    open private(set) var image: InputSource
 
     /// Guesture recognizer to detect double tap to zoom
     open var gestureRecognizer: UITapGestureRecognizer?
@@ -120,8 +120,8 @@ open class ImageSlideshowItem: UIScrollView, UIScrollViewDelegate {
     }
 
     /// Request to load Image Source to Image View
-    public func loadImage() {
-        if self.imageView.image == nil && !isLoading {
+    public func loadImage(force: Bool = false) {
+        if (self.imageView.image == nil || force) && !isLoading {
             isLoading = true
             imageReleased = false
             activityIndicator?.show()
@@ -236,4 +236,10 @@ open class ImageSlideshowItem: UIScrollView, UIScrollViewDelegate {
         return zoomEnabled ? imageView : nil
     }
 
+    // MARK: - Added functions
+    
+    open func setImageInput(_ imageInput: InputSource) {
+        image = imageInput
+        loadImage(force: true)
+    }
 }

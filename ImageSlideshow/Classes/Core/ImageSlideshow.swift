@@ -283,8 +283,23 @@ open class ImageSlideshow: UIView {
         loadImages(for: scrollViewPage)
     }
     
+    func updateSlideshowItemsForImage(at index: Int) {
+        let slideshowItemsIndexes: [Int] = slideshowItemsIndexesForImagesIndex(index)
+        for i in slideshowItemsIndexes {
+            slideshowItems[i].setImageInput(scrollViewImages[i])
+            /*
+            slideshowItems[i].removeFromSuperview()
+            let image = scrollViewImages[i]
+            let item = ImageSlideshowItem(image: image, zoomEnabled: self.zoomEnabled, activityIndicator: self.activityIndicator?.create(), maximumScale: maximumScale)
+            item.imageView.contentMode = self.contentScaleMode
+            slideshowItems[i] = item
+            scrollView.addSubview(item)*/
+        }
+    }
+    
     private func removeImageFromScrollViewAndLayoutScrollView(index: Int, animated: Bool) {
-        let viewToRemove = slideshowItems.remove(at: slideshowItemsIndexForImagesIndex(index))
+        // TODO: This doesn't work for circular layout - need to check if image being replaced is first or last, and if so, change the added scrollViewImages/slideshowItems at beginning and end
+        let viewToRemove = slideshowItems.remove(at: slideshowItemsIndexesForImagesIndex(index)[0])
         if scrollViewPage >= slideshowItems.count {
             scrollViewPage = slideshowItems.count - 1
         }
@@ -324,9 +339,18 @@ open class ImageSlideshow: UIView {
         }
     }
 
-    private func slideshowItemsIndexForImagesIndex(_ index: Int) -> Int {
-        return index + (circular ? 1 : 0)
+    private func slideshowItemsIndexesForImagesIndex(_ index: Int) -> [Int] {
+        let mainIndex = index + (circular ? 1 : 0)
+        var additionalIndex: Int? = nil
+        if circular && index == 0 {
+            additionalIndex = images.count + 1
+        }
+        else if circular && index == (images.count - 1) {
+            additionalIndex = 0
+        }
+        return [mainIndex, additionalIndex].flatMap({ $0 })
     }
+
     
     // MARK: - Image setting
 
@@ -344,6 +368,18 @@ open class ImageSlideshow: UIView {
         layoutScrollView()
         layoutPageControl()
         setTimerIfNeeded()
+    }
+    
+    open func updateImageInput(_ input: InputSource, at index: Int) {
+        if index >= self.images.count {
+            // pos is out of bounds
+            return
+        }
+        self.images[index] = input
+        
+        updateScrollViewImages()
+        //reloadScrollView()
+        updateSlideshowItemsForImage(at: index)
     }
     
     private func updatePageControlNumberOfPages() {
