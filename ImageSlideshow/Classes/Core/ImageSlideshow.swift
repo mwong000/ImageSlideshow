@@ -301,7 +301,7 @@ open class ImageSlideshow: UIView {
         // TODO: This doesn't work for circular layout - need to check if image being replaced is first or last, and if so, change the added scrollViewImages/slideshowItems at beginning and end
         let viewToRemove = slideshowItems.remove(at: slideshowItemsIndexesForImagesIndex(index)[0])
         if scrollViewPage >= slideshowItems.count {
-            scrollViewPage = slideshowItems.count - 1
+            scrollViewPage = max(0, slideshowItems.count - 1)
         }
         if animated {
             UIView.animate(withDuration: 0.2, animations: {
