@@ -406,6 +406,10 @@ open class ImageSlideshow: UIView {
     }
     
     open func removeImageInput(at index: Int, animated: Bool) {
+        if index >= images.count {
+            debugPrint("ImageSlideshow: Trying to removeImageInput with index \(index) out of bounds")
+            return
+        }
         images.remove(at: index)
         updatePageControlNumberOfPages()
         updateScrollViewImages()
